@@ -111,7 +111,7 @@ export default class Pdf extends Component {
     }
 
     cacheDir() {
-      return this.props.dir || RNFetchBlob.fs.dirs.CacheDir;
+      return this.props.source.dir || RNFetchBlob.fs.dirs.CacheDir;
     }
 
     _loadFromSource = newSource => {
