@@ -12,15 +12,15 @@ A react native PDF view component (cross-platform support)
 * support password protected pdf
 
 ### Installation
-We use [`react-native-fetch-blob`](https://github.com/wkh237/react-native-fetch-blob#installation) to handle file system access in this package,
-So you should install react-native-pdf and react-native-fetch-blob
+We use [`rn-fetch-blob`](https://github.com/joltup/rn-fetch-blob) to handle file system access in this package,
+So you should install react-native-pdf and rn-fetch-blob
 
 ```bash
+npm install rn-fetch-blob --save
 npm install react-native-pdf --save
-npm install react-native-fetch-blob --save
 
+react-native link rn-fetch-blob
 react-native link react-native-pdf
-react-native link react-native-fetch-blob
 ```
 
 ### FAQ
@@ -32,83 +32,62 @@ You can add it manually. For detail you can see the issue [`#24`](https://github
 Q2. When running, it shows ```'Pdf' has no propType for native prop RCTPdf.acessibilityLabel of native type 'String'```  
 A2. Your react-native version is too old, please upgrade it to 0.47.0+ see also [`#39`](https://github.com/wonday/react-native-pdf/issues/39)
 
+Q3. When I run the example app I get a white screen / the loading bar isn't progressing on IOS.  
+A3. Check your uri, if you hit a pdf that is hosted on a `http` you will need to add an exception for the server hosting the pdf in the ios `info.plist`. Here is an example :  
+
+```
+<key>NSAppTransportSecurity</key>
+<dict>
+  <key>NSExceptionDomains</key>
+  <dict>
+    <key>yourserver.com</key>
+    <dict>
+      <!--Include to allow subdomains-->
+      <key>NSIncludesSubdomains</key>
+      <true/>
+      <!--Include to allow HTTP requests-->
+      <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+      <true/>
+      <!--Include to specify minimum TLS version-->
+      <key>NSTemporaryExceptionMinimumTLSVersion</key>
+      <string>TLSv1.1</string>
+    </dict>
+  </dict>
+</dict>
+```
+
+Q4. why doesn't it work with react native expo?.  
+A4. Expo does not support native module. you can read more expo caveats [`here`](https://facebook.github.io/react-native/docs/getting-started.html#caveats)
+
+
 ### ChangeLog
 
-v3.0.0-alpha  
-(Just a test version, Do not use in your product)  
+v5.0.2
+1. fix file successfully download check
 
-1. rewrite all iOS codes， improve scroll performance/Smoothness, fix scale/onPageChanged...  
-2. add onPageSigleTap(), onScaleChanged()
-3. update android dependent lib AndroidPdfViewer to 3.0.0.alpha.4
+v5.0.1
+1. add paging support (ios and android)
+2. add RTL support (ios)
+3. fix position when set page (ios)
 
-Known issues  
-1. iOS zooming can not scroll to pinch center 
+v5.0.0 (**break change**)
+1. use iOS PDFKit to show pdf (iOS SDK>=11)
+2. use js+native to show pdf (iOS SDK<11, the same with 4.0.0)
+3. support pdf with layers (iOS SDK>=11)
+4. support pdf with links (iOS SDK>=11)
+5. fix zoom (iOS SDK>=11)
 
-v2.0.7
 
-1. update android dependent lib AndroidPdfViewer to 2.8.1
+v4.0.0 (**break change**)
+1. replace dependence lib ```react-native-fetch-blob``` with ```rn-fetch-blob```
+if you upgrade from an old version, you should 
+```
+react-native unlink react-native-fetch-blob
+npm uninstall react-native-fetch-blob
 
-v2.0.6
-
-1. fix change page number, do not redraw problem
-
-v2.0.5
-
-1. add code protect for not load the same pdf twice
-2. can scroll out of bounds with blank page, after stop, redraw pages
-3. cancel not finished download task when componentWillUnmount.
-
-v2.0.4
-
-1. add .git to .npmignore
-
-v2.0.3
-
-1. Fix iOS load pdf problem [`#76`](https://github.com/wonday/react-native-pdf/issues/76)
-
-v2.0.2
-
-1. Fix pdf canvas was clipped problem [`#69`](https://github.com/wonday/react-native-pdf/issues/69)
-
-v2.0.1
-
-1. Improve iOS version scrolling performance
-2. Fix never ending loop rendering problem in example code
-
-v2.0.0
-
-1. Reimplement iOS version by UIScrollView, improve scrolling performance
-2. Fix iOS paging [`#63`](https://github.com/wonday/react-native-pdf/issues/63)
-
-v1.3.5
-
-1. Improve scolling performance
-2. Return pdf local/cache path when callback onLoadComplete [`#57`](https://github.com/wonday/react-native-pdf/issues/57)
-
-v1.3.4
-
-1. Update iOS project to Xcode9 format.
-2. Fix crash problem when load from base64 [`#58`](https://github.com/wonday/react-native-pdf/issues/58)
-3. Fix TypeScript definition for onError [`#53`](https://github.com/wonday/react-native-pdf/issues/53)
-4. Update sample code in readme
-
-v1.3.3
-
-1. Improve iOS scrolling performance, fix [`#47`](https://github.com/wonday/react-native-pdf/issues/47)
-
-v1.3.2
-
-1. Move react-native and react-native-fetch-blob to peerDependencies
-
-v1.3.1
-
-1. Refactor android source
-2. Stop page scrolling when tap screen [`#41`](https://github.com/wonday/react-native-pdf/issues/41)
-
-v1.3.0
-
-1. Fix drawing problem on Android 4.4 [`#31`](https://github.com/wonday/react-native-pdf/issues/31)
-2. Add fitWidth support [`#36`](https://github.com/wonday/react-native-pdf/issues/36) , [`#38`](https://github.com/wonday/react-native-pdf/issues/38)
+npm install rn-fetch-blob --save
+react-native link rn-fetch-blob
+```
 
 [[more]](https://github.com/wonday/react-native-pdf/releases)
 
@@ -186,9 +165,12 @@ const styles = StyleSheet.create({
 | password      | string        | ""               | pdf password, if password error, will call OnError() with message "Password required or incorrect password."        | ✔   | ✔ | <3.0 |
 | style         | object        | {backgroundColor:"#eee"} | support normal view style, you can use this to set border/spacing color... | ✔   | ✔ | <3.0 |
 | activityIndicator   | Component       | <ProgressBar/> | when loading show it as an indicator, you can use your component| ✔   | ✔ | <3.0 |
+| activityIndicatorProps  | object      | {color:'#009900',progressTintColor:'#009900'} | activityIndicator props | ✔ | ✔ | 3.1 |
 | enableAntialiasing  | bool            | true        | improve rendering a little bit on low-res screens, but maybe course some problem on Android 4.4, so add a switch  | ✖   | ✔ | <3.0 |
+| enablePaging  | bool            | false        | only show one page in screen   | ✔ | ✔ | 5.0.1 |
+| enableRTL  | bool            | false        | scroll page as "page3, page2, page1"  | ✔   | ✖ | 5.0.1 |
 | onLoadProgress      | function(percent) | null        | callback when loading, return loading progress (0-1) | ✔   | ✔ | <3.0 |
-| onLoadComplete      | function(numberOfPages, path) | null        | callback when pdf load completed, return total page count and pdf local/cache path | ✔   | ✔ | <3.0 |
+| onLoadComplete      | function(numberOfPages, path, {width, height}) | null        | callback when pdf load completed, return total page count and pdf local/cache path | ✔   | ✔ | <3.0 |
 | onPageChanged       | function(page,numberOfPages)  | null        | callback when page changed ,return current page and total page count | ✔   | ✔ | <3.0 |
 | onError       | function(error) | null        | callback when error happened | ✔   | ✔ | <3.0 |
 | onPageSingleTap   | function(page)  | null        | callback when page was single tapped | ✔ | ✔ | 3.0 |
@@ -200,6 +182,7 @@ const styles = StyleSheet.create({
 | ------------ | ----------- | ------- | --- | ------- |
 | uri          | pdf source, see the forllowing for detail.| required | ✔   | ✔ |
 | cache        | use cache or not | false | ✔ | ✔ |
+| expiration   | cache file expired seconds (0 is not expired) | 0 | ✔ | ✔ |
 | method       | request method when uri is a url | "GET" | ✔ | ✔ |
 | headers      | request headers when uri is a url | {} | ✔ | ✔ |
 

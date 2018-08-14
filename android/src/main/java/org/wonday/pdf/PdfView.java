@@ -58,9 +58,13 @@ public class PdfView extends PDFView implements OnPageChangeListener,OnLoadCompl
     private int spacing = 10;
     private String password = "";
     private boolean enableAntialiasing = true;
+    private boolean enablePaging = false;
+    private boolean autoSpacing = false;
+    private boolean pageFling = false;
+    private boolean pageSnap = false;
     private FitPolicy fitPolicy = FitPolicy.WIDTH;
+
     private static PdfView instance = null;
-    private boolean isMove = false;
 
     private float lastPageWidth = 0;
     private float lastPageHeight = 0;
@@ -92,10 +96,13 @@ public class PdfView extends PDFView implements OnPageChangeListener,OnLoadCompl
     @Override
     public void loadComplete(int numberOfPages) {
 
+        float width = this.getWidth();
+        float height = this.getHeight();
+
         this.zoomTo(this.scale);
 
         WritableMap event = Arguments.createMap();
-        event.putString("message", "loadComplete|"+numberOfPages);
+        event.putString("message", "loadComplete|"+numberOfPages+"|"+width+"|"+height);
         ReactContext reactContext = (ReactContext)this.getContext();
         reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
             this.getId(),
@@ -164,11 +171,8 @@ public class PdfView extends PDFView implements OnPageChangeListener,OnLoadCompl
         showLog(format("drawPdf path:%s %s", this.path, this.page));
 
         if (this.path != null){
-            File pdfFile = new File(this.path);
-            this.fromFile(pdfFile)
+            this.fromUri(getURI(this.path))
                 .defaultPage(this.page-1)
-                //.showMinimap(false)
-                //.enableSwipe(true)
                 .swipeHorizontal(this.horizontal)
                 .onPageChange(this)
                 .onLoad(this)
@@ -179,18 +183,10 @@ public class PdfView extends PDFView implements OnPageChangeListener,OnLoadCompl
                 .password(this.password)
                 .enableAntialiasing(this.enableAntialiasing)
                 .pageFitPolicy(this.fitPolicy)
-/*
-                .onRender(new OnRenderListener() {
-                                @Override
-                                public void onInitiallyRendered(int nbPages, float pageWidth, float pageHeight) {
-                                    if (fitWidth) {
-                                        instance.fitToWidth(page-1);
-                                    }
-                                }
-                            })
-*/
+                .pageSnap(this.pageSnap)
+                .autoSpacing(this.autoSpacing)
+                .pageFling(this.pageFling)
                 .load();
-
 
         }
     }
@@ -224,6 +220,19 @@ public class PdfView extends PDFView implements OnPageChangeListener,OnLoadCompl
         this.enableAntialiasing = enableAntialiasing;
     }
 
+    public void setEnablePaging(boolean enablePaging) {
+        this.enablePaging = enablePaging;
+        if (this.enablePaging) {
+            this.autoSpacing = true;
+            this.pageFling = true;
+            this.pageSnap = true;
+        } else {
+            this.autoSpacing = false;
+            this.pageFling = false;
+            this.pageSnap = false;
+        }
+    }
+
     public void setFitPolicy(int fitPolicy) {
         switch(fitPolicy){
             case 0:
@@ -244,5 +253,14 @@ public class PdfView extends PDFView implements OnPageChangeListener,OnLoadCompl
 
     private void showLog(final String str) {
         Log.d("PdfView", str);
+    }
+
+    private Uri getURI(final String uri) {
+        Uri parsed = Uri.parse(uri);
+
+        if (parsed.getScheme() == null || parsed.getScheme().isEmpty()) {
+          return Uri.fromFile(new File(uri));
+        }
+        return parsed;
     }
 }

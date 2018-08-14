@@ -45,49 +45,64 @@ RCT_EXPORT_METHOD(loadFile:(NSString *)path
     if (pdfDocRefs==Nil) {
         pdfDocRefs = [NSMutableArray arrayWithCapacity:1];
     }
-    
+
     int numberOfPages = 0;
-    
+
     if (path != nil && path.length != 0) {
-        
+
         NSURL *pdfURL = [NSURL fileURLWithPath:path];
         CGPDFDocumentRef pdfRef = CGPDFDocumentCreateWithURL((__bridge CFURLRef) pdfURL);
-        
+
         if (pdfRef == NULL) {
-            //reject(RCTErrorUnspecified, [NSString stringWithFormat:@"error|Load pdf failed. path=%s",path.UTF8String], nil);
+            reject(RCTErrorUnspecified, [NSString stringWithFormat:@"Load pdf failed. path=%s",path.UTF8String], nil);
+            return;
         }
-        
+
         if (CGPDFDocumentIsEncrypted(pdfRef)) {
 
             bool isUnlocked = CGPDFDocumentUnlockWithPassword(pdfRef, [password UTF8String]);
             if (!isUnlocked) {
                 reject(RCTErrorUnspecified, @"Password required or incorrect password.", nil);
+                return;
             }
 
         }
-        
+
         [pdfDocRefs addObject:[NSValue valueWithPointer:pdfRef]];
-        
+
         numberOfPages = (int)CGPDFDocumentGetNumberOfPages(pdfRef);
         CGPDFPageRef pdfPage = CGPDFDocumentGetPage(pdfRef, 1);
-        CGRect pdfPageRect = CGPDFPageGetBoxRect(pdfPage, kCGPDFCropBox);
+        CGRect pdfPageRect = CGPDFPageGetBoxRect(pdfPage, kCGPDFMediaBox);
+        int rotation = CGPDFPageGetRotationAngle(pdfPage);
+        
+        NSArray *params;
+        
+        if (rotation == 90 || rotation==270) {
+             params =@[[NSNumber numberWithUnsignedLong:([pdfDocRefs count]-1)], [NSNumber numberWithInt:numberOfPages], [NSNumber numberWithFloat:pdfPageRect.size.height], [NSNumber numberWithFloat:pdfPageRect.size.width]];
+            RLog(@"Pdf loaded numberOfPages=%d, fileNo=%lu, pageWidth=%f, pageHeight=%f", numberOfPages, [pdfDocRefs count]-1, pdfPageRect.size.height, pdfPageRect.size.width);
 
-        NSArray *params =@[[NSNumber numberWithUnsignedLong:([pdfDocRefs count]-1)], [NSNumber numberWithInt:numberOfPages], [NSNumber numberWithFloat:pdfPageRect.size.width], [NSNumber numberWithFloat:pdfPageRect.size.height]];
-        RLog(@"Pdf loaded numberOfPages=%d, fileNo=%lu, pageWidth=%f, pageHeight=%f", numberOfPages, [pdfDocRefs count]-1, pdfPageRect.size.width, pdfPageRect.size.height);
+        } else {
+            params =@[[NSNumber numberWithUnsignedLong:([pdfDocRefs count]-1)], [NSNumber numberWithInt:numberOfPages], [NSNumber numberWithFloat:pdfPageRect.size.width], [NSNumber numberWithFloat:pdfPageRect.size.height]];
+            RLog(@"Pdf loaded numberOfPages=%d, fileNo=%lu, pageWidth=%f, pageHeight=%f", numberOfPages, [pdfDocRefs count]-1, pdfPageRect.size.width, pdfPageRect.size.height);
+
+        }
+
         resolve(params);
+        return;
     } else {
-        reject(RCTErrorUnspecified, @"error|Load pdf failed. path=null", nil);
+        reject(RCTErrorUnspecified, @"Load pdf failed. path=null", nil);
+        return;
     }
 }
 
 + (CGPDFDocumentRef) getPdf:(NSUInteger) index
 {
     if (pdfDocRefs && [pdfDocRefs count]>index){
-        
+
         return (CGPDFDocumentRef)[(NSValue *)[pdfDocRefs objectAtIndex:index] pointerValue];
-                
+
     }
-    
+
     return NULL;
 }
 
@@ -95,11 +110,17 @@ RCT_EXPORT_METHOD(loadFile:(NSString *)path
 {
     
     if ((self = [super init])) {
-        
+
     }
     return self;
-    
+
 }
+
++ (BOOL)requiresMainQueueSetup
+{
+    return YES;
+}
+
 
 - (void)dealloc
 {
@@ -107,14 +128,14 @@ RCT_EXPORT_METHOD(loadFile:(NSString *)path
     for(NSValue *item in pdfDocRefs) {
         CGPDFDocumentRef pdfItem = [item pointerValue];
         if (pdfItem != NULL) {
-            
+
             CGPDFDocumentRelease(pdfItem);
             pdfItem = NULL;
-            
+
         }
     }
     pdfDocRefs = Nil;
-    
+
 }
 
 

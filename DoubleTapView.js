@@ -10,14 +10,15 @@
 import React, {Component} from 'react';
 import {
     View,
-    PanResponder
+    PanResponder,
+    ViewPropTypes,
 } from 'react-native';
 import PropTypes from 'prop-types';
 
 export default class DoubleTapView extends Component {
 
     static propTypes = {
-        ...View.propTypes,
+        ...ViewPropTypes,
         delay: PropTypes.number,
         radius: PropTypes.number,
         onSingleTap: PropTypes.func,
@@ -97,12 +98,14 @@ export default class DoubleTapView extends Component {
 
             }
         } else {
+            // do not count scroll gestures as taps
+            if (this.distance(0, gestureState.dx, 0, gestureState.dy) < 10) {
 
-            this.timer = setTimeout(() => {
-                this.props.onSingleTap();
-                this.timer = null;
-            }, this.props.delay);
-
+                this.timer = setTimeout(() => {
+                    this.props.onSingleTap();
+                    this.timer = null;
+                }, this.props.delay);
+            }
         }
 
 
