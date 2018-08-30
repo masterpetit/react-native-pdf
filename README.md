@@ -1,1 +1,1 @@
-Fork of `react-native-pdf` that includes a prop to set the directory of the downloaded PDF files.
+This fork is not used anymore.
